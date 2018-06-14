@@ -1,19 +1,11 @@
 package org.apache.camel.sendgrid;
 
+import com.sendgrid.*;
 import org.apache.camel.Attachment;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultProducer;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
-
-import com.sendgrid.Attachments;
-import com.sendgrid.Content;
-import com.sendgrid.Email;
-import com.sendgrid.Mail;
-import com.sendgrid.Method;
-import com.sendgrid.Request;
-import com.sendgrid.Response;
-import com.sendgrid.SendGrid;
 
 public class SendGridProducer extends DefaultProducer {
 
@@ -44,6 +36,7 @@ public class SendGridProducer extends DefaultProducer {
 		String from = exchange.getIn().getHeader("from", String.class);
 		String subject = exchange.getIn().getHeader("subject", String.class);
 		String sender = exchange.getIn().getHeader("sender", String.class);
+		String[] categories = exchange.getIn().getHeader("categories", String[].class);
 
 		Email emailTo = new Email(to);
 		Email emailFrom = sender != null ? new Email(from, sender) : new Email(from);
@@ -64,6 +57,19 @@ public class SendGridProducer extends DefaultProducer {
 			attachments.setContent(Base64.encodeBase64String(bytes));
 
 			mail.addAttachments(attachments);
+		}
+
+		if (categories != null) {
+			for (String category : categories) {
+				mail.addCategory(category);
+			}
+		}
+
+		Integer asmGroupId = exchange.getIn().getHeader("unsubscribeGroupId", Integer.class);
+		if (asmGroupId != null) {
+			ASM asm = new ASM();
+			asm.setGroupId(asmGroupId);
+			mail.setASM(asm);
 		}
 
 		Request request = new Request();
